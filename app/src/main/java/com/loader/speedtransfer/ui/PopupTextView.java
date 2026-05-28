@@ -131,8 +131,8 @@ public class PopupTextView extends AppCompatTextView {
             int offset = getPreciseOffset(lastTouchX, lastTouchY);
             if (offset < 0 || offset > getText().length()) return false;
 
-            selectionStart = offset;
-            selectionEnd = Math.min(offset + 1, getText().length());
+            selectionStart = 0;
+            selectionEnd = getText().length();
             isSelecting = true;
             invalidate();
             post(()->{

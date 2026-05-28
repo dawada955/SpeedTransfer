@@ -47,13 +47,17 @@ public class AndroidHttpServer extends NanoWSD {
     private List<MyWebSocket> webSockets = new ArrayList<>();
     private String ipAddress;
     @SuppressLint("SetTextI18n")
-    public AndroidHttpServer(Context context) throws IOException {
+    public AndroidHttpServer(Context context, ChatCallback callback) throws IOException {
         super(PORT);
         this.context = context;
-        this.chatCallback = (ChatCallback) context;
+        this.chatCallback = callback;
+
+        // 避免系统 /data/local/tmp 空间不足导致大文件上传失败
+        File tempDir = new File(context.getCacheDir(), "nanohttpd_tmp");
+        tempDir.mkdirs();
+        System.setProperty("java.io.tmpdir", tempDir.getAbsolutePath());
 
         start(SOCKET_READ_TIMEOUT, false);
-        chatCallback.onDisplayNetwork(getLocalIpAddress(), PORT);
         Log.i(TAG, "HTTP/WebSocket服务器已启动: ws://" + getLocalIpAddress() + ":" + PORT);
     }
 
@@ -130,14 +134,15 @@ public class AndroidHttpServer extends NanoWSD {
     }
 
     public void ws_handleBroadcastMessage(String message) {
-        Log.d("httpMod", "客户端数量" + webSockets.size());
+        Log.d("httpMod", "WebSocket 客户端数量: " + webSockets.size());
         for (MyWebSocket ws : webSockets) {
             if (ws.isOpen()) {
                 try {
                     ws.send(message);
-                    Log.d("httpMod", "客户端" + message);
+                    Log.d("httpMod", "广播成功: " + message);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    Log.e("httpMod", "广播失败: " + e.getMessage());
+                    webSockets.remove(ws);
                 }
             }
         }
@@ -150,70 +155,92 @@ public class AndroidHttpServer extends NanoWSD {
             Map<String, String> files = new HashMap<>();
             session.parseBody(files);
 
-            // 获取上传的临时文件路径
             String tmpFilePath = files.get("file");
             if (tmpFilePath == null) {
                 return newFixedLengthResponse(Response.Status.BAD_REQUEST, MIME_PLAINTEXT, "400 Bad Request");
             }
-            // 获取原始文件名（从表单参数或Content-Disposition头）
+
             String fileName = session.getParms().get("originalFilename");
-            fileName = URLDecoder.decode(fileName, "UTF-8");
+            if (fileName != null && !fileName.isEmpty()) {
+                fileName = URLDecoder.decode(fileName, "UTF-8");
+            }
             if (fileName == null || fileName.isEmpty()) {
-                // 如果表单没有提供，尝试从Content-Disposition头解析
-                String contentDisposition = session.getHeaders().get("content-disposition");
-                if (contentDisposition != null) {
-                    String[] parts = contentDisposition.split(";");
-                    for (String part : parts) {
+                String cd = session.getHeaders().get("content-disposition");
+                if (cd != null) {
+                    for (String part : cd.split(";")) {
                         if (part.trim().startsWith("filename=")) {
-                            fileName = part.substring(part.indexOf('=') + 1).trim();
-                            fileName = fileName.replace("\"", "");
+                            fileName = part.substring(part.indexOf('=') + 1).trim().replace("\"", "");
                             break;
                         }
                     }
                 }
             }
-            // 如果仍然无法获取文件名，使用临时文件名
             if (fileName == null || fileName.isEmpty()) {
                 fileName = new File(tmpFilePath).getName();
             }
-            File downloadDir = CustomField.UploadDir;
-            if (!downloadDir.exists()) {
-                downloadDir.mkdirs();
+
+            File uploadDir = CustomField.UploadDir;
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
             }
-            File destFile = new File(downloadDir, fileName);
+            File destFile = new File(uploadDir, fileName);
+
+            long fileSize = new File(tmpFilePath).length();
+            long freeSpace = uploadDir.getFreeSpace();
+            if (freeSpace < fileSize + 50L * 1024 * 1024) {
+                Log.e(TAG, "存储空间不足: 可用=" + freeSpace + " 需要=" + (fileSize + 50*1024*1024));
+                return newFixedLengthResponse(new Response.IStatus() {
+                    @Override public int getRequestStatus() { return 507; }
+                    @Override public String getDescription() { return "Insufficient Storage"; }
+                }, MIME_PLAINTEXT, "存储空间不足，可用 " + (freeSpace / 1024 / 1024) + "MB");
+            }
 
             chatMsg = new ChatMessage();
-            // 更新文件接收气泡
+            chatMsg.setSenderName(ipAddress);
             chatCallback.onReceiveFileMessage(chatMsg, destFile);
 
             try (InputStream in = new FileInputStream(tmpFilePath);
-                 FileOutputStream out = new FileOutputStream(destFile)) {
+                 OutputStream out = new FileOutputStream(destFile)) {
 
-                byte[] buffer = new byte[1024];
-                int length;
+                byte[] buffer = new byte[65536];
+                int len;
                 long total = 0;
-                long fileSize = new File(tmpFilePath).length();
+                long lastUpdateTime = System.currentTimeMillis();
 
-                int dis_time = 1000;  // 1000 * 1024 字节传输 更新一次
-                while ((length = in.read(buffer)) > 0) {
-                    out.write(buffer, 0, length);
+                while ((len = in.read(buffer)) > 0) {
+                    out.write(buffer, 0, len);
+                    total += len;
 
-                    total += length;
-
-                    if(dis_time <= 0) {
-                        // 显示进度更新
-                        chatCallback.onReceiveFileMessageProgress(chatMsg, (int) ((total * 100) / fileSize), total);
-                        dis_time = 1000;
+                    long now = System.currentTimeMillis();
+                    if (now - lastUpdateTime >= 200) {
+                        int progress = fileSize > 0 ? (int) ((total * 100) / fileSize) : -1;
+                        chatCallback.onReceiveFileMessageProgress(chatMsg, progress, total);
+                        lastUpdateTime = now;
                     }
-                    dis_time--;
                 }
-                // 成功完成
+                out.flush();
+
                 chatCallback.onReceiveFileMessageComplete(chatMsg, total);
+                Log.i(TAG, "文件上传完成: " + fileName + " (" + total + " bytes)");
             }
+
             return newFixedLengthResponse(Response.Status.OK, MIME_PLAINTEXT, "文件上传成功: " + fileName);
+
         } catch (IOException | ResponseException e) {
-            chatCallback.onReceiveFileMessageError(chatMsg);
-            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, "500 Internal Server Error");
+            Log.e(TAG, "上传异常: " + e.getMessage());
+            if (chatMsg != null && e instanceof IOException &&
+                    e.getMessage() != null &&
+                    (e.getMessage().contains("No space") || e.getMessage().contains("ENOSPC"))) {
+                chatCallback.onReceiveFileMessageError(chatMsg);
+                return newFixedLengthResponse(new Response.IStatus() {
+                    @Override public int getRequestStatus() { return 507; }
+                    @Override public String getDescription() { return "Insufficient Storage"; }
+                }, MIME_PLAINTEXT, "存储空间不足");
+            }
+            if (chatMsg != null) {
+                chatCallback.onReceiveFileMessageError(chatMsg);
+            }
+            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, "Upload failed");
         }
     }
 
@@ -299,17 +326,15 @@ public class AndroidHttpServer extends NanoWSD {
     }
     private Response handleReceiveChat(IHTTPSession session) {
         try {
-            // 读取请求体内容
             Map<String, String> body = new HashMap<>();
             session.parseBody(body);
             String postData = body.get("postData");
 
-            // 假设只想取 message 字段
-            String message = extractMessage(postData); // 下面有这个方法
+            String message = extractMessage(postData);
 
             chatCallback.onReceiveMessage(ipAddress, message);
 
-            return newFixedLengthResponse(Response.Status.OK, "application/json", "{\"status\":\"ok\", \"message\":\""+message+"\"}");
+            return newFixedLengthResponse(Response.Status.OK, "application/json", "{\"status\":\"ok\"}");
         } catch (Exception e) {
             e.printStackTrace();
             return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "出错：" + e.getMessage());

@@ -2,11 +2,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="8dp"
-    android:paddingHorizontal="4dp"
-    >
-
-
+    android:paddingVertical="6dp"
+    android:paddingHorizontal="8dp">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/head"
@@ -17,21 +14,38 @@
         android:scaleType="centerCrop"
         app:shapeAppearanceOverlay="@style/CircleImage"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/triangle_tail"
+        android:layout_width="5dp"
+        android:layout_height="8dp"
+        android:background="@drawable/ic_triangle_left_gray"
+        app:layout_constraintStart_toEndOf="@+id/head"
+        app:layout_constraintTop_toTopOf="@+id/text_message"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tv_sender_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="客户端"
+        android:textSize="10sp"
+        android:textColor="#999999"
+        app:layout_constraintStart_toStartOf="@+id/text_message"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.loader.speedtransfer.ui.PopupTextView
         android:id="@+id/text_message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_bubble_receiver"
         android:textColor="@android:color/black"
-        app:layout_constraintStart_toEndOf="@+id/head"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/triangle_tail"
+        app:layout_constraintTop_toBottomOf="@+id/tv_sender_name"
         android:breakStrategy="simple"
         android:inputType="textMultiLine"
-        android:layout_marginStart="8dp"
         android:lineSpacingExtra="0dp"
         android:maxLines="10"
         android:minLines="1"
@@ -40,6 +54,5 @@
         android:minHeight="36dp"
         android:padding="8dp"
         android:textSize="15sp" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

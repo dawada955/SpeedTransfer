@@ -15,12 +15,15 @@ import java.io.File;
 public class FileUiUtils {
     public static void openFile(Context context, File file) {
         String mimeType = getMimeType(file.getName());
+        if (mimeType == null) {
+            mimeType = "*/*";
+        }
         Uri uri = FileProvider.getUriForFile(context,
                 context.getPackageName() + ".fileprovider", file);
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, mimeType);
-        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
 
         try {
             context.startActivity(intent);

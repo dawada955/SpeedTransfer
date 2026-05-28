@@ -5,11 +5,15 @@ import java.io.File;
 public class ChatMessage {
     private String content;
     private boolean isSender;
+    private String senderName;
 
     public ChatMessage() {}
 
     public enum MessageType { TEXT, FILE }
     private MessageType type;
+
+    public enum SendStatus { SENDING, SENT, FAILED }
+    private SendStatus sendStatus = SendStatus.SENT;
 
     public ChatMessage(String content, MessageType type, boolean isSender) {
         this.content = content;
@@ -39,6 +43,22 @@ public class ChatMessage {
 
     public void setSender(boolean sender) {
         isSender = sender;
+    }
+
+    public SendStatus getSendStatus() {
+        return sendStatus;
+    }
+
+    public void setSendStatus(SendStatus sendStatus) {
+        this.sendStatus = sendStatus;
+    }
+
+    public String getSenderName() {
+        return senderName;
+    }
+
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
     }
 
     private File file;

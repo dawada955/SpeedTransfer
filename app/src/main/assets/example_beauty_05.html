@@ -3,604 +3,501 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>"粉白"聊天屋</title>
+  <title>客户端</title>
   <style>
+    /* ============ 主题变量 ============ */
     :root {
-      --bg-main: linear-gradient(270deg, #ffe4ec, #ffddee, #ffe4ec);
-      --chat-bg: #fff5f8;
-      --bubble-user: #ffc9dc;
-      --bubble-server: #ffffff;
-      --border-color: #ffc0cb;
-      --text-color: #333;
-      --header-bg: #ffc0cb;
-      --btn-bg: #ff8eb5;
-      --btn-hover: #ff6fa2;
-      --overlay: rgba(200, 200, 200, 0.5);
+      --bg-main:              linear-gradient(270deg, #ffe4ec, #ffddee, #ffe4ec);
+      --chat-bg:              #fff5f8;
+      --chat-bubble-user:     #ffc9dc;      --chat-bubble-server:   #ffffff;
+      --border-color:         #ffc0cb;
+      --text-color:           #333;
+      --text-secondary:       #999;
+      --header-bg:            #ffc0cb;
+      --btn-bg:               #ff8eb5;
+      --btn-hover:            #ff6fa2;
+      --toggle-bg:            rgba(255,255,255,0.22);
+      --toggle-text:          #fff;
+      --avatar-server:        #FF69B4;
+      --avatar-user:          #90A4AE;
+      --file-icon-bg:         #ffd6e0;
+      --progress-color:       #ff69b4;
+      --placeholder-color:    #bbb;
+      --upload-btn-border:    #ccc;
+      --separator:            var(--border-color);
     }
-
     body.dark {
-      --bg-main: #1e1e1e;
-      --chat-bg: #2c2c2c;
-      --bubble-user: #444;
-      --bubble-server: #666;
-      --border-color: #555;
-      --text-color: #eee;
-      --header-bg: #333;
-      --btn-bg: #555;
-      --btn-hover: #777;
-      --overlay: rgba(50, 50, 50, 0.5);
+      --bg-main:              #1a1a2e;
+      --chat-bg:              #252540;
+      --chat-bubble-user:     #3a3a5c;
+      --chat-bubble-server:   #2e2e48;
+      --border-color:         #3a3a55;
+      --text-color:           #d4d4dc;
+      --text-secondary:       #777;
+      --header-bg:            #2a2a45;
+      --btn-bg:               #4a4a6a;
+      --btn-hover:            #5a5a7a;
+      --toggle-bg:            rgba(255,255,255,0.10);
+      --toggle-text:          #bbb;
+      --avatar-server:        #AD1457;
+      --avatar-user:          #455A64;
+      --file-icon-bg:         #3a3040;
+      --progress-color:       #dcdcdc;
+      --placeholder-color:    #555;
+      --upload-btn-border:    #555;
+      --separator:            var(--border-color);
     }
-
     body.light {
-      --bg-main: #e0f0ff;
-      --chat-bg: #ffffff;
-      --bubble-user: #d0ebff;
-      --bubble-server: #ffffff;
-      --border-color: #90caf9;
-      --text-color: #000;
-      --header-bg: #90caf9;
-      --btn-bg: #64b5f6;
-      --btn-hover: #42a5f5;
-      --overlay: rgba(200, 200, 200, 0.5);
+      --bg-main:              #e3f2fd;
+      --chat-bg:              #ffffff;
+      --chat-bubble-user:     #bbdefb;
+      --chat-bubble-server:   #ffffff;
+      --border-color:         #90caf9;
+      --text-color:           #222;
+      --text-secondary:       #888;
+      --header-bg:            #64b5f6;
+      --btn-bg:               #42a5f5;
+      --btn-hover:            #1e88e5;
+      --toggle-bg:            rgba(255,255,255,0.22);
+      --toggle-text:          #fff;
+      --avatar-server:        #1E88E5;
+      --avatar-user:          #78909C;
+      --file-icon-bg:         #e3f2fd;
+      --progress-color:       #42a5f5;
+      --placeholder-color:    #bbb;
+      --upload-btn-border:    #ccc;
+      --separator:            var(--border-color);
     }
-
+    /* ============================= */
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin: 0; height: 100vh;
+      display: flex; justify-content: center; align-items: center;
       background: var(--bg-main);
       background-size: 600% 600%;
       animation: bgMove 20s ease infinite;
-      font-family: "Segoe UI", sans-serif;
+      font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
       color: var(--text-color);
-      transition: all 0.4s ease;
+      transition: background 0.4s ease, color 0.3s ease;
+      user-select: none;
     }
     @keyframes bgMove {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
     .chat-container {
-      width: 600px;
-      height: 720px;
+      width: 620px; height: 750px;
       background: var(--chat-bg);
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: background 0.3s ease;
     }
-
     .chat-header {
       background: var(--header-bg);
-      padding: 16px;
-      font-size: 18px;
-      font-weight: bold;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background 0.3s ease;
     }
-
     .chat-body {
-      flex: 4;
-      padding: 16px;
-      overflow-y: auto;
+      flex: 1; padding: 16px 18px; overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+    .chat-body * { user-select: text; }
+
+    .msg-row {
+      display: flex; margin-bottom: 18px; gap: 10px;
+    }
+    .msg-row.server { justify-content: flex-start; }
+    .msg-row.user   { justify-content: flex-end; }
+
+    .avatar {
+      width: 36px; height: 36px; border-radius: 4px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: #fff; font-weight: 600;
+    }
+    .avatar.server { background: var(--avatar-server); }
+    .avatar.user   { background: var(--avatar-user); }
+
+    .bubble {
+      max-width: 68%; padding: 10px 14px; border-radius: 4px;
+      line-height: 1.5; word-break: break-word;
+      font-size: 14px; position: relative;
+    }
+    .bubble.user   { background-color: var(--chat-bubble-user); }
+    .bubble.server {
+      background-color: var(--chat-bubble-server);
+      border: 1px solid var(--border-color);
+    }
+    .bubble.user::after {
+      content:''; position:absolute; right:-6px; top:10px;
+      width:0; height:0;
+      border-left:6px solid var(--chat-bubble-user);
+      border-top:5px solid transparent;
+      border-bottom:5px solid transparent;
+    }
+    .bubble.server::before {
+      content:''; position:absolute; left:-8px; top:10px;
+      width:0; height:0;
+      border-right:7px solid var(--border-color);
+      border-top:6px solid transparent;
+      border-bottom:6px solid transparent;
+    }
+    .bubble.server::after {
+      content:''; position:absolute; left:-6px; top:11px;
+      width:0; height:0;
+      border-right:6px solid var(--chat-bubble-server);
+      border-top:5px solid transparent;
+      border-bottom:5px solid transparent;
     }
 
-    .message {
-      max-width: 80%;
-      padding: 10px 14px;
-      border-radius: 16px;
-      margin-bottom: 10px;
-      line-height: 1.4;
-      word-break: break-word;
-      position: relative;
-    }
-    .message.user { align-self: flex-end; background-color: var(--bubble-user); border-bottom-right-radius: 0; }
-    .message.server { align-self: flex-start; background-color: var(--bubble-server); border: 1px solid var(--border-color); border-bottom-left-radius: 0; }
-
-    
-    .file-message {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
+    .file-msg { display:flex; align-items:flex-start; gap:10px; }
     .file-icon {
-      width: 40px;
-      height: 40px;
-      background-color: #ffd6e0;
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      width:40px; height:40px;
+      background-color: var(--file-icon-bg);
+      border-radius:6px;
+      display:flex; justify-content:center; align-items:center;
+      font-size:18px; cursor:pointer; flex-shrink:0;
+    }
+    .file-info { display:flex; flex-direction:column; }
+    .file-name { font-weight:600; font-size:13px; }
+    .file-size { font-size:11px; color:var(--text-secondary); }
+    .upload-status { font-size:11px; color:var(--text-secondary); }
+    .upload-status.highlight {
+      color: var(--progress-color);
       font-weight: bold;
-      cursor: pointer;
-    }
-
-    .file-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .file-name { font-weight: bold; }
-    .file-size { font-size: 12px; color: #888; }
-
-    .upload-overlay {
-      position: absolute;
-      inset: 0;
-      background: var(--overlay);
-      border-radius: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .progress-circle {
-      width: 40px;
-      height: 40px;
+      font-size: 12px;
     }
 
     .chat-footer {
-      padding: 0;
       background: var(--chat-bg);
-      display: flex;
-      flex-direction: column;
-      border-top: 1px solid var(--border-color);
+      border-top:1px solid var(--border-color);
+      padding:0; transition: background 0.3s ease;
     }
-
-    .footer-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-    }
-
-    .footer-editor {
-      padding: 0 12px;
-    }
-
-    .footer-editor textarea {
-      width: 100%;
-      border: none;
-      border-radius: 0;
-      resize: none;
-      height: 80px;
-      padding: 10px 8px;
-      background: transparent;
-      color: var(--text-color);
-      font-size: 16px;
-    }
-
-    .footer-editor textarea:focus {
-      outline: none;
-    }
-
-    .footer-send {
-      display: flex;
-      justify-content: flex-end;
-      padding: 8px 12px 12px;
-    }
-
-    button.send-btn {
-      background-color: var(--btn-bg);
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.3s;
-      font-size: 16px;
-    }
-
-    button.send-btn:hover {
-      background-color: var(--btn-hover);
-    }
-
     .footer-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display:flex; align-items:center; gap:10px;
+      padding:6px 16px;
+      border-bottom:1px solid var(--separator);
     }
-
-    .selected-file {
-      display: flex;
-      align-items: center;
-      background: var(--bubble-user);
-      padding: 6px 10px;
-      border-radius: 8px;
-      gap: 10px;
-      font-size: 14px;
-      max-width: 100%;
-    }
-    .selected-file .remove {
-      cursor: pointer;
-      color: red;
-      font-weight: bold;
-    }
-
-    .footer-bottom {
-      display: flex;
-      width: 100%;
-      gap: 8px;
-    }
-
-    textarea {
-      flex: 1;
-      padding: 12px 14px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      resize: none;
-      height: 100px;
-      width: 100%;
-    }
-
-    .chat-footer button.send-btn {
-      background-color: var(--btn-bg);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.3s;
-      font-size: 15px;
-      min-width: 110px;
-    }
-
-    .chat-footer button.send-btn:hover {
-      background-color: var(--btn-hover);
-    }
-
     .upload-btn {
-      font-size: 18px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
+      width:32px; height:32px;
+      border:1.5px dashed var(--upload-btn-border);
+      border-radius:6px; background:transparent;
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:var(--text-secondary);
+      transition:0.15s; flex-shrink:0;
     }
+    .upload-btn:hover { border-color:var(--progress-color); color:var(--progress-color); }
+    .selected-file {
+      display:flex; align-items:center;
+      background: var(--chat-bubble-user);
+      padding:4px 10px; border-radius:6px;
+      gap:6px; font-size:12px; max-width:280px;
+    }
+    .selected-file span:first-child {
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      flex-shrink:1; min-width:0;
+    }
+    .selected-file .remove { cursor:pointer; color:#e53935; font-weight:bold; flex-shrink:0; }
+    .footer-editor { padding:10px 16px; }
+    .footer-editor textarea {
+      width:100%; border:none; outline:none;
+      resize:none; border-radius:6px;
+      height:100px; padding:6px 0;
+      font-size:15px; color:var(--text-color);
+      background:transparent;
+    }
+    .footer-editor textarea::placeholder { color:var(--placeholder-color); }
+    .footer-send { display:flex; justify-content:flex-end; padding:6px 16px 14px; }
+    button.send-btn {
+      background-color:var(--btn-bg); color:#fff; border:none;
+      padding:9px 28px; border-radius:6px;
+      cursor:pointer; font-size:15px; transition:0.15s;
+    }
+    button.send-btn:hover { background-color:var(--btn-hover); }
+    button.send-btn:active { transform:scale(0.97); }
 
-    .settings {
-      position: absolute;
-      top: 16px;
-      right: 16px;
+    .theme-dots { display:flex; gap:8px; align-items:center; }
+    .dot {
+      width:22px; height:22px; border-radius:50%;
+      cursor:pointer; border:2px solid transparent;
+      transition:border-color 0.2s,transform 0.15s; flex-shrink:0;
     }
-    .settings select {
-      padding: 4px 8px;
-      border-radius: 8px;
+    .dot:hover { transform:scale(1.15); }
+    .dot.active { border-color:#fff; transform:scale(1.10); }
+
+    #toggleViewBtn {
+      background:var(--toggle-bg); border:none;
+      color:var(--toggle-text);
+      width:40px; height:30px; border-radius:6px;
+      cursor:pointer; font-size:15px;
+      display:inline-flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+      transition: background 0.2s;
     }
+    #toggleViewBtn:hover { background:rgba(255,255,255,0.35); }
 
     .file-list-view {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      display: none;
+      flex:1; padding:18px; overflow-y:auto; display:none;
     }
     .file-item {
-      margin-bottom: 8px;
-      cursor: pointer;
-      text-decoration: underline;
-      color: var(--text-color);
+      padding:10px 4px; cursor:pointer; color:var(--text-color);
+      border-bottom:1px solid var(--border-color); font-size:14px;
     }
-
-    .file-item:hover {
-      color: var(--btn-hover);
-    }
+    .file-item:hover { color:var(--btn-hover); }
   </style>
 </head>
 <body class="default">
-  <div class="chat-container" id="chat-container">
+  <div class="chat-container">
     <div class="chat-header">
-      "粉白"聊天屋
-      <div class="settings">
-        <select id="themeSwitcher">
-          <option value="default">"粉白"主题</option>
-          <option value="light">亮色主题</option>
-          <option value="dark">暗色主题</option>
-        </select>
-        <button id="toggleViewBtn">📁 文件列表</button>
+      <div class="theme-dots">
+        <span class="dot active" data-theme="default" style="background:linear-gradient(135deg,#ffc0cb,#ff69b4)" title="默认"></span>
+        <span class="dot" data-theme="light" style="background:linear-gradient(135deg,#90caf9,#42a5f5)" title="亮色"></span>
+        <span class="dot" data-theme="dark" style="background:linear-gradient(135deg,#3a3050,#252540)" title="暗色"></span>
       </div>
+      <button id="toggleViewBtn">📁</button>
     </div>
     <div class="chat-body" id="chat-body"></div>
     <div class="file-list-view" id="file-list-view"></div>
     <div class="chat-footer">
-      <div class="footer-toolbar">
-        <button id="fileUpload" class="upload-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+      <div class="footer-top">
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()" title="选择文件">＋</button>
         <input type="file" id="fileInput" style="display:none" />
         <div id="selectedFileDisplay"></div>
       </div>
       <div class="footer-editor">
-        <textarea id="messageInput" placeholder=""></textarea>
+        <textarea id="messageInput" placeholder="输入消息..."></textarea>
       </div>
       <div class="footer-send">
-        <button class="send-btn" onclick="sendMessage()">发送</button>
+        <button class="send-btn" onclick="sendMessage()">发 送</button>
       </div>
     </div>
-    
   </div>
 
   <script>
+    var loc = window.location;
+    var wsUrl = (loc.protocol==="https:"?"wss://":"ws://") + loc.hostname + ":" + loc.port + "/";
+    var wsSocket, uploading = false;
 
-    const loc = window.location;
-    const wsProtocol = loc.protocol === "https:" ? "wss://" : "ws://";
-    const wsUrl = wsProtocol + loc.hostname + ":" + loc.port + "/";
-    const wsSocket = new WebSocket(wsUrl);
+    function connectWS() {
+      wsSocket = new WebSocket(wsUrl);
+      wsSocket.onmessage = function(e){ addMsg(e.data, 'server'); };
+      wsSocket.onclose = function(){ setTimeout(connectWS, 2000); };
+    }
+    connectWS();
 
-    wsSocket.onopen = () => {
-        // console.log("WebSocket 连接成功");
-    };
+    setInterval(function(){
+      if (wsSocket && wsSocket.readyState === WebSocket.OPEN) wsSocket.send("ping");
+    }, 30000);
 
-    wsSocket.onmessage = (event) => {
-        console.log("收到消息: " + event.data);
-        // 显示到聊天气泡中
-        addMessage('"粉白"对你说：' + event.data, 'server') 
-        
-    };
+    var chatBody = document.getElementById('chat-body');
+    var msgInput = document.getElementById('messageInput');
+    var fileInput = document.getElementById('fileInput');
+    var selFileDisp = document.getElementById('selectedFileDisplay');
 
-    setInterval(() => {
-      if (wsSocket.readyState === WebSocket.OPEN) {
-          wsSocket.send("Is Live...");
-      }
-    }, 3000);
-
-    const chatBody = document.getElementById('chat-body');
-    const messageInput = document.getElementById('messageInput');
-    const fileInput = document.getElementById('fileInput');
-    const themeSwitcher = document.getElementById('themeSwitcher');
-    const chatContainer = document.getElementById('chat-container');
-    const selectedFileDisplay = document.getElementById('selectedFileDisplay');
-
-    themeSwitcher.addEventListener('change', () => {
-      const theme = themeSwitcher.value;
-      document.body.className = theme === 'default' ? '' : theme;
+    document.querySelectorAll('.dot').forEach(function(d){
+      d.addEventListener('click', function(){
+        document.querySelectorAll('.dot').forEach(function(x){ x.classList.remove('active'); });
+        this.classList.add('active');
+        document.body.className = this.dataset.theme === 'default' ? '' : this.dataset.theme;
+      });
     });
 
-    function addMessage(content, type) {
-      const msg = document.createElement('div');
-      msg.className = 'message ' + type;
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      msg.innerHTML = `
-        <div>${content}</div>
-        <div style="font-size: 11px; text-align: right; opacity: 0.6; margin-top: 4px;">${time}</div>
-      `;
-      chatBody.appendChild(msg);
+    function addMsg(text, type) {
+      var row = document.createElement('div');
+      row.className = 'msg-row ' + type;
+      var avatar = document.createElement('div');
+      avatar.className = 'avatar ' + type;
+      avatar.textContent = type === 'server' ? '微' : '我';
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble ' + type;
+      bubble.textContent = text;
+      if (type === 'user') { row.appendChild(bubble); row.appendChild(avatar); }
+      else { row.appendChild(avatar); row.appendChild(bubble); }
+      chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
     }
 
-
-    function formatSize(sizeInBytes) {
-      if (sizeInBytes < 1024) return sizeInBytes + ' B';
-      const kb = sizeInBytes / 1024;
+    function fmtSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      var kb = bytes / 1024;
       if (kb < 1024) return kb.toFixed(1) + ' KB';
-      const mb = kb / 1024;
+      var mb = kb / 1024;
       if (mb < 1024) return mb.toFixed(1) + ' MB';
-      const gb = mb / 1024;
-      return gb.toFixed(1) + ' GB';
+      return (mb / 1024).toFixed(1) + ' GB';
     }
 
-    function FileUpload(file) {
-      const msg = document.createElement('div');
-      msg.className = 'message user';
+    function fmtSpeed(bytesPerSec) {
+      if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + ' B/s';
+      var kbs = bytesPerSec / 1024;
+      if (kbs < 1024) return kbs.toFixed(0) + ' KB/s';
+      var mbs = kbs / 1024;
+      if (mbs < 1024) return mbs.toFixed(1) + ' MB/s';
+      return (mbs / 1024).toFixed(1) + ' GB/s';
+    }
 
-      const fileWrapper = document.createElement('div');
-      fileWrapper.className = 'file-message';
+    function fmtTime(seconds) {
+      if (!isFinite(seconds) || seconds <= 0) return '';
+      if (seconds < 60) return Math.round(seconds) + '秒';
+      if (seconds < 3600) return Math.round(seconds / 60) + '分钟';
+      return (seconds / 3600).toFixed(1) + '小时';
+    }
 
-      const ext = file.name.split('.').pop().toLowerCase();
-      const iconMap = {
-        pdf: "📄", doc: "📄", docx: "📄", jpg: "🖼️", jpeg: "🖼️", png: "🖼️", gif: "🖼️",
-        mp4: "🎥", zip: "🗜️", txt: "📃", xls: "📊"
-      };
-      const icon = iconMap[ext] || "📁";
+    function sendMessage() {
+      var content = msgInput.value.trim();
+      var hasFile = fileInput.files.length > 0;
 
-      fileWrapper.innerHTML = `
-        <div class="file-icon">${icon}</div>
-        <div class="file-info">
-          <div class="file-name">${file.name}</div>
-          <div class="file-size">${formatSize(file.size)}</div>
-          <div class="upload-status">已上传 0% · 0KB/s · 估算中...</div>
-        </div>
-      `;
-      msg.appendChild(fileWrapper);
+      if (hasFile) {
+        doUploadFile(fileInput.files[0]);
+        fileInput.value = ''; selFileDisp.innerHTML = '';
+      }
+      if (content) {
+        addMsg(content, 'user');
+        msgInput.value = '';
+        fetch("/chat", { method:"POST",
+          headers:{"Content-Type":"application/json; charset=UTF-8"},
+          body: JSON.stringify({message:content})
+        }).catch(function(){});
+      }
+    }
 
-      fileWrapper.querySelector('.file-icon').addEventListener('click', () => {
-        const url = URL.createObjectURL(file);
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-          const imgPreview = window.open('', '_blank');
-          imgPreview.document.write(`<img src="${url}" style="max-width:100%">`);
-        } else {
-          window.open(url, '_blank');
-        }
+    function doUploadFile(file) {
+      var row = document.createElement('div');
+      row.className = 'msg-row user';
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble user';
+      bubble.style.position = 'relative';
+
+      var ext = file.name.split('.').pop().toLowerCase();
+      var iconMap = { pdf:"📄",doc:"📄",docx:"📄",jpg:"🖼️",jpeg:"🖼️",png:"🖼️",gif:"🖼️",
+        mp4:"🎥",zip:"🗜️",txt:"📃",xls:"📊" };
+      var icon = iconMap[ext] || "📁";
+
+      bubble.innerHTML =
+        '<div class="file-msg">'+
+          '<div class="file-icon">'+icon+'</div>'+
+          '<div class="file-info">'+
+            '<div class="file-name">'+file.name+'</div>'+
+            '<div class="file-size">'+fmtSize(file.size)+'</div>'+
+            '<div class="upload-status">准备上传...</div>'+
+          '</div>'+
+        '</div>';
+
+      bubble.querySelector('.file-icon').addEventListener('click', function(){
+        var url = URL.createObjectURL(file);
+        if (['jpg','jpeg','png','gif','webp'].indexOf(ext)>=0) {
+          var w = window.open('','_blank');
+          w.document.write('<img src="'+url+'" style="max-width:100%">');
+        } else window.open(url,'_blank');
       });
 
-      const overlay = document.createElement('div');
-      overlay.className = 'upload-overlay';
-      overlay.innerHTML = `<svg class="progress-circle" viewBox="0 0 36 36">
-        <path d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831" 
-                fill="none" stroke="#ff69b4" stroke-width="2" 
-                stroke-dasharray="0, 100" />
-      </svg>`;
-      msg.appendChild(overlay);
-
-      chatBody.appendChild(msg);
+      var avatar = document.createElement('div');
+      avatar.className = 'avatar user'; avatar.textContent = '我';
+      row.appendChild(bubble); row.appendChild(avatar);
+      chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
 
-      let progress = 0;
-      const totalSizeKB = file.size / 1024;
-      const statusText = fileWrapper.querySelector('.upload-status');
-      const path = overlay.querySelector('path');
+      var statusTxt = bubble.querySelector('.upload-status');
+      statusTxt.classList.add('highlight');
+      var startTime = Date.now();
+      var completed = false;
 
-      // 上传后端逻辑
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("originalFilename", encodeURIComponent(file.name));
+      var fd = new FormData();
+      fd.append("file", file);
+      fd.append("originalFilename", encodeURIComponent(file.name));
 
-      const xhr = new XMLHttpRequest();
-      let lastTime = Date.now();
-      let lastLoaded = 0;
-      xhr.upload.onprogress = function (e) { // 更新进度条
+      var xhr = new XMLHttpRequest();
+      xhr.timeout = 600000;
+
+      xhr.upload.onprogress = function(e) {
         if (e.lengthComputable) {
-
-          progress = Math.round((e.loaded / e.total) * 100);
-          
-          const now = Date.now();
-          const timeDiff = (now - lastTime) / 1000;
-          const loadedDiff = (e.loaded - lastLoaded) / 1024;
-          const speed = (loadedDiff / timeDiff).toFixed(1);
-          const remain = ((e.total - e.loaded) / 1024 / speed).toFixed(1);
-          if (speed && remain && isFinite(remain)) {
-            path.setAttribute('stroke-dasharray', `${progress}, 100`);
-            statusText.innerText = `已上传 ${progress}% · ${formatSize(speedKBps * 1024)}/s · 剩余 ${remaining} 秒`;
-
-          }
-          lastTime = now;
-          lastLoaded = e.loaded;
+          var pct = Math.round((e.loaded / e.total) * 100);
+          var elapsed = (Date.now() - startTime) / 1000;
+          var bps = elapsed > 0 ? (e.loaded / elapsed) : 0;
+          var remaining = bps > 0 ? ((e.total - e.loaded) / bps) : 0;
+          var timeStr = fmtTime(remaining);
+          statusTxt.innerText = '上传中 ' + pct + '% · ' + fmtSpeed(bps) + (timeStr ? ' · 剩余' + timeStr : '');
         }
       };
-      xhr.onload = function () {
-        msg.removeChild(overlay);
-        if (xhr.status === 200) {
-            statusText.innerText = `上传完成 · ${formatSize(file.size)}`;
-          } else {
-            statusText.innerText = `上传失败 · ${formatSize(file.size)}`;
-          }
+
+      xhr.onload = function() {
+        if (completed) return; completed = true;
+        statusTxt.classList.remove('highlight');
+        var msg = xhr.status === 200 ? '上传完成' :
+                  xhr.status === 507 ? '空间不足' :
+                  '上传失败('+xhr.status+')';
+        statusTxt.innerText = msg + ' · ' + fmtSize(file.size);
+        if (xhr.status !== 200) statusTxt.style.color = '#e53935';
       };
+
+      xhr.onerror = function() {
+        if (completed) return; completed = true;
+        statusTxt.classList.remove('highlight');
+        statusTxt.innerText = '上传失败 · ' + fmtSize(file.size);
+        statusTxt.style.color = '#e53935';
+      };
+
+      xhr.ontimeout = function() {
+        if (completed) return; completed = true;
+        statusTxt.classList.remove('highlight');
+        statusTxt.innerText = '上传超时 · ' + fmtSize(file.size);
+        statusTxt.style.color = '#e53935';
+      };
+
+      xhr.onabort = function() {
+        if (completed) return; completed = true;
+        statusTxt.classList.remove('highlight');
+        statusTxt.innerText = '已取消 · ' + fmtSize(file.size);
+      };
+
       xhr.open('POST', '/upload', true);
-      xhr.send(formData);
+      xhr.send(fd);
     }
 
-    
-
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        selectedFileDisplay.innerHTML = `
-          <div class="selected-file">
-            <span>${file.name}</span>
-            <span class="remove" onclick="removeSelectedFile()">✖</span>
-          </div>`;
-      }
+    fileInput.addEventListener('change', function(e) {
+      var f = e.target.files[0];
+      if (f) selFileDisp.innerHTML =
+        '<div class="selected-file"><span>'+f.name+'</span>'+
+        '<span class="remove" onclick="removeSel()">✕</span></div>';
     });
+    function removeSel() { fileInput.value=''; selFileDisp.innerHTML=''; }
 
-    function removeSelectedFile() {
-      fileInput.value = "";
-      selectedFileDisplay.innerHTML = "";
-    }
-
-    chatContainer.addEventListener('dragover', e => {
-      e.preventDefault();
-    });
-    
-    chatContainer.addEventListener('drop', e => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) FileUpload(file);
+    document.querySelector('.chat-container').addEventListener('dragover', function(e){ e.preventDefault(); });
+    document.querySelector('.chat-container').addEventListener('drop', function(e){
+      e.preventDefault(); var f = e.dataTransfer.files[0]; if (f) doUploadFile(f);
     });
   </script>
   <script>
-    const FileList = []
-    let inFileView = false;
-    const toggleViewBtn = document.getElementById('toggleViewBtn');
-    const fileListView = document.getElementById('file-list-view');
-
-    function initPage() {
-      toggleViewBtn.textContent = '💬 聊天模式'
-      fileListView.style.display = 'none'
-      chatBody.style.display = 'block'
-    }
-    
-    document.addEventListener("DOMContentLoaded", function () {
-      // 页面加载完成后自动执行
-      initPage();
+    var inFileView = false;
+    var toggleBtn = document.getElementById('toggleViewBtn');
+    var fileView = document.getElementById('file-list-view');
+    document.addEventListener("DOMContentLoaded",function(){
+      toggleBtn.textContent='📁'; fileView.style.display='none'; chatBody.style.display='flex';
     });
-
-    function renderFileList() {
-      console.log(inFileView);  
-      fileListView.innerHTML = '';
-      FileList.forEach(item => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.textContent = item.isDir ? `[目录] ${item.name}` : item.name;
-        fileItem.onclick = () => {
-          if (!item.isDir) window.open(item.url, '_blank');
-        };
-        fileListView.appendChild(fileItem);
+    function renderFiles(data){
+      fileView.innerHTML='';
+      data.forEach(function(item){
+        var d=document.createElement('div'); d.className='file-item';
+        d.textContent=decodeURIComponent(item.filename)+'  ('+fmtSize(item.size)+')';
+        d.onclick=function(){ window.open('/download?file='+item.filename,'_blank'); };
+        fileView.appendChild(d);
       });
-
-      FileList.length = 0; // 置空文件列表数据，防止重复
     }
-
-    // 获取文件列表的函数
-    function getFileListAndRender() {
-      fetch('/fileList')  // 替换为实际"粉白"地址
-        .then(response => response.json())  // 解析 JSON 响应
-        .then(data => {
-            console.log(data)
-            data.forEach(file => {
-                FileList.push({
-                  name:decodeURIComponent(file.filename),
-                  size: file.size,
-                  isDir: false,
-                  url: '/download?file=' + file.filename
-                })
-            });
-        }).then(() => renderFileList())
-        .catch(error => {
-            console.error('Error fetching file list:', error);
-        });
+    function loadFiles(){
+      fetch('/fileList').then(function(r){return r.json();})
+        .then(function(data){renderFiles(data);})
+        .catch(function(){fileView.innerHTML='<div style="color:var(--text-secondary)">加载失败</div>';});
     }
-
-    toggleViewBtn.addEventListener('click', () => {
-      inFileView = !inFileView;
-      fileListView.style.display = inFileView ? 'block' : 'none';
-      chatBody.style.display = inFileView ? 'none' : 'block';
-      toggleViewBtn.textContent = inFileView ? '📁 文件列表' : '💬 聊天模式';
-        
-      if (inFileView){
-        getFileListAndRender(); 
-      } 
+    toggleBtn.addEventListener('click',function(){
+      inFileView=!inFileView;
+      fileView.style.display=inFileView?'block':'none';
+      chatBody.style.display=inFileView?'none':'flex';
+      toggleBtn.textContent=inFileView?'💬':'📁';
+      if(inFileView)loadFiles();
     });
-
-  </script>
-  <script>
-    function sendMessage() {
-      const content = messageInput.value.trim();
-      if (!content && !fileInput.files.length) return;
-
-      if (fileInput.files.length > 0) {
-        FileUpload(fileInput.files[0]);
-        fileInput.value = "";
-        selectedFileDisplay.innerHTML = "";
-      }
-
-      if (content) {
-        addMessage(content, 'user');
-        messageInput.value = '';
-        fetch("/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json; charset=UTF-8"
-          },
-          body: JSON.stringify({ message: content })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status == 'ok') addMessage('""粉白""听到了：' + data.message, 'server') 
-          else addMessage('"粉白"没收到：......', 'server') 
-        })
-        .catch(error => {
-          addMessage('"粉白"告诉你：' + error, 'server')
-        });
-      }
-    }
-
   </script>
 </body>
 </html>

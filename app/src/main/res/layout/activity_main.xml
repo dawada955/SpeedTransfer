@@ -9,7 +9,7 @@
     android:fitsSystemWindows="true"
     tools:context=".ui.MainActivity">
 
-    <!-- 顶部标题栏 -->
+    <!-- 顶部标题栏：标题 + IP（可点击复制） -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/top_bar"
         android:layout_width="0dp"
@@ -30,32 +30,63 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="30dp"
-            android:layout_marginBottom="0dp"
-            />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-    <!-- 显示网络地址 -->
-    <LinearLayout
-        android:id="@+id/ll_StatusBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/top_bar"
-        app:layout_constraintStart_toStartOf="parent"
-        android:background="#eeedf2"
-        android:paddingVertical="8dp"
-        >
+            android:layout_marginStart="24dp" />
 
-        <!--    丑    #f3f3f5-->
         <TextView
             android:id="@+id/tv_NetworkAddressPort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="xxx.xxx.xxx.xxx:xxxx"
-            android:textSize="14sp"
-            android:textColor="#333333"
-            android:layout_marginLeft="24dp"
-            />
-    </LinearLayout>
+            android:textColor="#FFE0E0E0"
+            android:textSize="12sp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="16dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- 共享文件折叠按钮 -->
+    <TextView
+        android:id="@+id/tv_file_toggle_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="▶ 共享文件 (0)"
+        android:textSize="13sp"
+        android:textColor="#888888"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="10dp"
+        android:background="#FFFBFBFB"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/top_bar" />
+
+    <!-- 文件列表动画容器 -->
+    <FrameLayout
+        android:id="@+id/file_list_wrapper"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/tv_file_toggle_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView_files"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp"
+            android:maxHeight="200dp"
+            android:background="#FFFBFBFB"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+    </FrameLayout>
 
     <!-- 聊天列表 -->
     <androidx.recyclerview.widget.RecyclerView
@@ -64,12 +95,11 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:padding="12dp"
-        android:background="#eeedf2"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toBottomOf="@id/ll_StatusBar"
+        android:background="#FFF5F5F5"
+        app:layout_constraintTop_toBottomOf="@id/file_list_wrapper"
         app:layout_constraintBottom_toTopOf="@id/bottom_bar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- 底部输入栏 -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -91,19 +121,8 @@
             android:layout_height="24dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/editText_message"
-            app:layout_constraintBottom_toBottomOf="@+id/editText_message"
-            />
-<!--        <ImageView-->
-<!--            android:id="@+id/Iv_function"-->
-<!--            android:layout_width="26dp"-->
-<!--            android:layout_height="26dp"-->
-<!--            android:background="@drawable/add_circle_default"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="@+id/editText_message"-->
-<!--            app:layout_constraintBottom_toBottomOf="@+id/editText_message"-->
-<!--            />-->
+            app:layout_constraintBottom_toBottomOf="@+id/editText_message" />
 
-        <!-- 聊天输入框 -->
         <EditText
             android:id="@+id/editText_message"
             android:layout_width="0dp"
@@ -121,9 +140,8 @@
             android:textCursorDrawable="@drawable/input_box_cursor"
             android:layout_marginTop="6dp"
             android:layout_marginStart="9dp"
-            android:layout_marginEnd="10dp"/>
+            android:layout_marginEnd="10dp" />
 
-        <!-- 发送按钮 -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_send"
             android:layout_width="56dp"
@@ -137,8 +155,7 @@
             app:layout_constraintTop_toTopOf="@+id/bottom_bar"
             app:layout_constraintBottom_toBottomOf="@id/editText_message"
             app:layout_constraintEnd_toEndOf="parent"
-            android:clickable="false"
-        />
+            android:clickable="false" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

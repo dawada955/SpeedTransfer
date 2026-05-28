@@ -1,22 +1,43 @@
-<!-- res/layout/item_chat_file_sender.xml -->
+<!-- res/layout/item_chat_file_receiver.xml -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:gravity="start"
-    android:orientation="horizontal"
-    android:padding="8dp">
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="8dp">
+
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/head"
         android:layout_width="36dp"
         android:layout_height="36dp"
+        android:layout_marginBottom="3dp"
         android:src="@drawable/user_2"
         android:scaleType="centerCrop"
         app:shapeAppearanceOverlay="@style/CircleImage"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_sender_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="客户端"
+        android:textSize="10sp"
+        android:textColor="#999999"
+        app:layout_constraintStart_toStartOf="@+id/file_bubble"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/triangle_tail"
+        android:layout_width="5dp"
+        android:layout_height="8dp"
+        android:background="@drawable/ic_triangle_left"
+        app:layout_constraintStart_toEndOf="@+id/head"
+        app:layout_constraintTop_toTopOf="@+id/file_bubble"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="8dp" />
+
     <LinearLayout
         android:id="@+id/file_bubble"
         android:orientation="horizontal"
@@ -27,11 +48,8 @@
         android:foreground="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintStart_toEndOf="@+id/head"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="1dp"
+        app:layout_constraintStart_toEndOf="@+id/triangle_tail"
+        app:layout_constraintTop_toBottomOf="@+id/tv_sender_name"
         android:gravity="center_vertical"
         tools:ignore="UselessParent">
 
@@ -41,7 +59,9 @@
             android:layout_height="40dp"
             android:contentDescription="TODO"
             android:src="@drawable/ic_file"
-            android:layout_marginEnd="8dp"/>
+            android:background="@drawable/bg_file_icon_dark"
+            android:padding="6dp"
+            android:layout_marginEnd="8dp" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:orientation="vertical"
@@ -61,7 +81,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 android:textIsSelectable="false"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
             <TextView
                 android:id="@+id/text_file_status"
@@ -72,7 +92,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 android:layout_marginTop="1dp"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
             <TextView
                 android:id="@+id/text_file_size"
@@ -84,14 +104,13 @@
                 app:layout_constraintStart_toEndOf="@+id/text_file_status"
                 android:layout_marginTop="1dp"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <FrameLayout
             android:id="@+id/file_layout_end"
             android:layout_width="40dp"
-            android:layout_height="40dp"
-            >
+            android:layout_height="40dp">
 
             <ProgressBar
                 android:id="@+id/progress_upload"
@@ -102,7 +121,7 @@
                 android:progress="50"
                 android:max="100"
                 android:progressDrawable="@drawable/progress_ring"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/icon_failed"
@@ -110,7 +129,7 @@
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_error"
                 android:scaleType="centerInside"
-                android:visibility="gone"/>
+                android:visibility="gone" />
         </FrameLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
