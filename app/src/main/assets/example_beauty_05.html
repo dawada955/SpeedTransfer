@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>"粉白"聊天屋</title>
+  <style>
+    :root {
+      --bg-main: linear-gradient(270deg, #ffe4ec, #ffddee, #ffe4ec);
+      --chat-bg: #fff5f8;
+      --bubble-user: #ffc9dc;
+      --bubble-server: #ffffff;
+      --border-color: #ffc0cb;
+      --text-color: #333;
+      --header-bg: #ffc0cb;
+      --btn-bg: #ff8eb5;
+      --btn-hover: #ff6fa2;
+      --overlay: rgba(200, 200, 200, 0.5);
+    }
+
+    body.dark {
+      --bg-main: #1e1e1e;
+      --chat-bg: #2c2c2c;
+      --bubble-user: #444;
+      --bubble-server: #666;
+      --border-color: #555;
+      --text-color: #eee;
+      --header-bg: #333;
+      --btn-bg: #555;
+      --btn-hover: #777;
+      --overlay: rgba(50, 50, 50, 0.5);
+    }
+
+    body.light {
+      --bg-main: #e0f0ff;
+      --chat-bg: #ffffff;
+      --bubble-user: #d0ebff;
+      --bubble-server: #ffffff;
+      --border-color: #90caf9;
+      --text-color: #000;
+      --header-bg: #90caf9;
+      --btn-bg: #64b5f6;
+      --btn-hover: #42a5f5;
+      --overlay: rgba(200, 200, 200, 0.5);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--bg-main);
+      background-size: 600% 600%;
+      animation: bgMove 20s ease infinite;
+      font-family: "Segoe UI", sans-serif;
+      color: var(--text-color);
+      transition: all 0.4s ease;
+    }
+    @keyframes bgMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .chat-container {
+      width: 600px;
+      height: 720px;
+      background: var(--chat-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chat-header {
+      background: var(--header-bg);
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-body {
+      flex: 4;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+      word-break: break-word;
+      position: relative;
+    }
+    .message.user { align-self: flex-end; background-color: var(--bubble-user); border-bottom-right-radius: 0; }
+    .message.server { align-self: flex-start; background-color: var(--bubble-server); border: 1px solid var(--border-color); border-bottom-left-radius: 0; }
+
+    
+    .file-message {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .file-icon {
+      width: 40px;
+      height: 40px;
+      background-color: #ffd6e0;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .file-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .file-name { font-weight: bold; }
+    .file-size { font-size: 12px; color: #888; }
+
+    .upload-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--overlay);
+      border-radius: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .progress-circle {
+      width: 40px;
+      height: 40px;
+    }
+
+    .chat-footer {
+      padding: 0;
+      background: var(--chat-bg);
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .footer-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+    }
+
+    .footer-editor {
+      padding: 0 12px;
+    }
+
+    .footer-editor textarea {
+      width: 100%;
+      border: none;
+      border-radius: 0;
+      resize: none;
+      height: 80px;
+      padding: 10px 8px;
+      background: transparent;
+      color: var(--text-color);
+      font-size: 16px;
+    }
+
+    .footer-editor textarea:focus {
+      outline: none;
+    }
+
+    .footer-send {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 12px 12px;
+    }
+
+    button.send-btn {
+      background-color: var(--btn-bg);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 16px;
+    }
+
+    button.send-btn:hover {
+      background-color: var(--btn-hover);
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .selected-file {
+      display: flex;
+      align-items: center;
+      background: var(--bubble-user);
+      padding: 6px 10px;
+      border-radius: 8px;
+      gap: 10px;
+      font-size: 14px;
+      max-width: 100%;
+    }
+    .selected-file .remove {
+      cursor: pointer;
+      color: red;
+      font-weight: bold;
+    }
+
+    .footer-bottom {
+      display: flex;
+      width: 100%;
+      gap: 8px;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      resize: none;
+      height: 100px;
+      width: 100%;
+    }
+
+    .chat-footer button.send-btn {
+      background-color: var(--btn-bg);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 15px;
+      min-width: 110px;
+    }
+
+    .chat-footer button.send-btn:hover {
+      background-color: var(--btn-hover);
+    }
+
+    .upload-btn {
+      font-size: 18px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .settings {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+    .settings select {
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+
+    .file-list-view {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: none;
+    }
+    .file-item {
+      margin-bottom: 8px;
+      cursor: pointer;
+      text-decoration: underline;
+      color: var(--text-color);
+    }
+
+    .file-item:hover {
+      color: var(--btn-hover);
+    }
+  </style>
+</head>
+<body class="default">
+  <div class="chat-container" id="chat-container">
+    <div class="chat-header">
+      "粉白"聊天屋
+      <div class="settings">
+        <select id="themeSwitcher">
+          <option value="default">"粉白"主题</option>
+          <option value="light">亮色主题</option>
+          <option value="dark">暗色主题</option>
+        </select>
+        <button id="toggleViewBtn">📁 文件列表</button>
+      </div>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="file-list-view" id="file-list-view"></div>
+    <div class="chat-footer">
+      <div class="footer-toolbar">
+        <button id="fileUpload" class="upload-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+        <input type="file" id="fileInput" style="display:none" />
+        <div id="selectedFileDisplay"></div>
+      </div>
+      <div class="footer-editor">
+        <textarea id="messageInput" placeholder=""></textarea>
+      </div>
+      <div class="footer-send">
+        <button class="send-btn" onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+    
+  </div>
+
+  <script>
+
+    const loc = window.location;
+    const wsProtocol = loc.protocol === "https:" ? "wss://" : "ws://";
+    const wsUrl = wsProtocol + loc.hostname + ":" + loc.port + "/";
+    const wsSocket = new WebSocket(wsUrl);
+
+    wsSocket.onopen = () => {
+        // console.log("WebSocket 连接成功");
+    };
+
+    wsSocket.onmessage = (event) => {
+        console.log("收到消息: " + event.data);
+        // 显示到聊天气泡中
+        addMessage('"粉白"对你说：' + event.data, 'server') 
+        
+    };
+
+    setInterval(() => {
+      if (wsSocket.readyState === WebSocket.OPEN) {
+          wsSocket.send("Is Live...");
+      }
+    }, 3000);
+
+    const chatBody = document.getElementById('chat-body');
+    const messageInput = document.getElementById('messageInput');
+    const fileInput = document.getElementById('fileInput');
+    const themeSwitcher = document.getElementById('themeSwitcher');
+    const chatContainer = document.getElementById('chat-container');
+    const selectedFileDisplay = document.getElementById('selectedFileDisplay');
+
+    themeSwitcher.addEventListener('change', () => {
+      const theme = themeSwitcher.value;
+      document.body.className = theme === 'default' ? '' : theme;
+    });
+
+    function addMessage(content, type) {
+      const msg = document.createElement('div');
+      msg.className = 'message ' + type;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      msg.innerHTML = `
+        <div>${content}</div>
+        <div style="font-size: 11px; text-align: right; opacity: 0.6; margin-top: 4px;">${time}</div>
+      `;
+      chatBody.appendChild(msg);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+
+    function formatSize(sizeInBytes) {
+      if (sizeInBytes < 1024) return sizeInBytes + ' B';
+      const kb = sizeInBytes / 1024;
+      if (kb < 1024) return kb.toFixed(1) + ' KB';
+      const mb = kb / 1024;
+      if (mb < 1024) return mb.toFixed(1) + ' MB';
+      const gb = mb / 1024;
+      return gb.toFixed(1) + ' GB';
+    }
+
+    function FileUpload(file) {
+      const msg = document.createElement('div');
+      msg.className = 'message user';
+
+      const fileWrapper = document.createElement('div');
+      fileWrapper.className = 'file-message';
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      const iconMap = {
+        pdf: "📄", doc: "📄", docx: "📄", jpg: "🖼️", jpeg: "🖼️", png: "🖼️", gif: "🖼️",
+        mp4: "🎥", zip: "🗜️", txt: "📃", xls: "📊"
+      };
+      const icon = iconMap[ext] || "📁";
+
+      fileWrapper.innerHTML = `
+        <div class="file-icon">${icon}</div>
+        <div class="file-info">
+          <div class="file-name">${file.name}</div>
+          <div class="file-size">${formatSize(file.size)}</div>
+          <div class="upload-status">已上传 0% · 0KB/s · 估算中...</div>
+        </div>
+      `;
+      msg.appendChild(fileWrapper);
+
+      fileWrapper.querySelector('.file-icon').addEventListener('click', () => {
+        const url = URL.createObjectURL(file);
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+          const imgPreview = window.open('', '_blank');
+          imgPreview.document.write(`<img src="${url}" style="max-width:100%">`);
+        } else {
+          window.open(url, '_blank');
+        }
+      });
+
+      const overlay = document.createElement('div');
+      overlay.className = 'upload-overlay';
+      overlay.innerHTML = `<svg class="progress-circle" viewBox="0 0 36 36">
+        <path d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831" 
+                fill="none" stroke="#ff69b4" stroke-width="2" 
+                stroke-dasharray="0, 100" />
+      </svg>`;
+      msg.appendChild(overlay);
+
+      chatBody.appendChild(msg);
+      chatBody.scrollTop = chatBody.scrollHeight;
+
+      let progress = 0;
+      const totalSizeKB = file.size / 1024;
+      const statusText = fileWrapper.querySelector('.upload-status');
+      const path = overlay.querySelector('path');
+
+      // 上传后端逻辑
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("originalFilename", encodeURIComponent(file.name));
+
+      const xhr = new XMLHttpRequest();
+      let lastTime = Date.now();
+      let lastLoaded = 0;
+      xhr.upload.onprogress = function (e) { // 更新进度条
+        if (e.lengthComputable) {
+
+          progress = Math.round((e.loaded / e.total) * 100);
+          
+          const now = Date.now();
+          const timeDiff = (now - lastTime) / 1000;
+          const loadedDiff = (e.loaded - lastLoaded) / 1024;
+          const speed = (loadedDiff / timeDiff).toFixed(1);
+          const remain = ((e.total - e.loaded) / 1024 / speed).toFixed(1);
+          if (speed && remain && isFinite(remain)) {
+            path.setAttribute('stroke-dasharray', `${progress}, 100`);
+            statusText.innerText = `已上传 ${progress}% · ${formatSize(speedKBps * 1024)}/s · 剩余 ${remaining} 秒`;
+
+          }
+          lastTime = now;
+          lastLoaded = e.loaded;
+        }
+      };
+      xhr.onload = function () {
+        msg.removeChild(overlay);
+        if (xhr.status === 200) {
+            statusText.innerText = `上传完成 · ${formatSize(file.size)}`;
+          } else {
+            statusText.innerText = `上传失败 · ${formatSize(file.size)}`;
+          }
+      };
+      xhr.open('POST', '/upload', true);
+      xhr.send(formData);
+    }
+
+    
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFileDisplay.innerHTML = `
+          <div class="selected-file">
+            <span>${file.name}</span>
+            <span class="remove" onclick="removeSelectedFile()">✖</span>
+          </div>`;
+      }
+    });
+
+    function removeSelectedFile() {
+      fileInput.value = "";
+      selectedFileDisplay.innerHTML = "";
+    }
+
+    chatContainer.addEventListener('dragover', e => {
+      e.preventDefault();
+    });
+    
+    chatContainer.addEventListener('drop', e => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file) FileUpload(file);
+    });
+  </script>
+  <script>
+    const FileList = []
+    let inFileView = false;
+    const toggleViewBtn = document.getElementById('toggleViewBtn');
+    const fileListView = document.getElementById('file-list-view');
+
+    function initPage() {
+      toggleViewBtn.textContent = '💬 聊天模式'
+      fileListView.style.display = 'none'
+      chatBody.style.display = 'block'
+    }
+    
+    document.addEventListener("DOMContentLoaded", function () {
+      // 页面加载完成后自动执行
+      initPage();
+    });
+
+    function renderFileList() {
+      console.log(inFileView);  
+      fileListView.innerHTML = '';
+      FileList.forEach(item => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.textContent = item.isDir ? `[目录] ${item.name}` : item.name;
+        fileItem.onclick = () => {
+          if (!item.isDir) window.open(item.url, '_blank');
+        };
+        fileListView.appendChild(fileItem);
+      });
+
+      FileList.length = 0; // 置空文件列表数据，防止重复
+    }
+
+    // 获取文件列表的函数
+    function getFileListAndRender() {
+      fetch('/fileList')  // 替换为实际"粉白"地址
+        .then(response => response.json())  // 解析 JSON 响应
+        .then(data => {
+            console.log(data)
+            data.forEach(file => {
+                FileList.push({
+                  name:decodeURIComponent(file.filename),
+                  size: file.size,
+                  isDir: false,
+                  url: '/download?file=' + file.filename
+                })
+            });
+        }).then(() => renderFileList())
+        .catch(error => {
+            console.error('Error fetching file list:', error);
+        });
+    }
+
+    toggleViewBtn.addEventListener('click', () => {
+      inFileView = !inFileView;
+      fileListView.style.display = inFileView ? 'block' : 'none';
+      chatBody.style.display = inFileView ? 'none' : 'block';
+      toggleViewBtn.textContent = inFileView ? '📁 文件列表' : '💬 聊天模式';
+        
+      if (inFileView){
+        getFileListAndRender(); 
+      } 
+    });
+
+  </script>
+  <script>
+    function sendMessage() {
+      const content = messageInput.value.trim();
+      if (!content && !fileInput.files.length) return;
+
+      if (fileInput.files.length > 0) {
+        FileUpload(fileInput.files[0]);
+        fileInput.value = "";
+        selectedFileDisplay.innerHTML = "";
+      }
+
+      if (content) {
+        addMessage(content, 'user');
+        messageInput.value = '';
+        fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=UTF-8"
+          },
+          body: JSON.stringify({ message: content })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status == 'ok') addMessage('""粉白""听到了：' + data.message, 'server') 
+          else addMessage('"粉白"没收到：......', 'server') 
+        })
+        .catch(error => {
+          addMessage('"粉白"告诉你：' + error, 'server')
+        });
+      }
+    }
+
+  </script>
+</body>
+</html>

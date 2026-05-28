@@ -1,0 +1,5 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <size android:width="1dp" /> <!-- 设置粗细为 1dp -->
+    <solid android:color="#FF4081" /> <!-- 你的主题色 -->
+</shape>

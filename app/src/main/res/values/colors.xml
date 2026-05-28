@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="pink">#FF69B4</color>
+    <color name="pink_a200">#FF4081</color>
+    <color name="progress_pink_bg">#FFB6C1</color>
+    <color name="pink_hint">#FFE4EC</color>
+    <color name="green">#00a638</color>
+    <color name="green_500">#4CAF50</color>
+    <color name="progress_green_bg">#C8E6C9</color>
+    <color name="green_hint">#C8E6C9</color>
+    <color name="input_area_color">#f3f3f5</color>
+</resources>

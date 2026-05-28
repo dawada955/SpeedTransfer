@@ -1,0 +1,13 @@
+<!-- res/drawable/bg_add_circle.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="oval">
+            <solid android:color="#FA98B5" /> <!-- 按下态：加深色 -->
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/pink_a200" /> <!-- 默认主题色 -->
+        </shape>
+    </item>
+</selector>

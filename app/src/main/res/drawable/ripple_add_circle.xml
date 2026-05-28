@@ -1,0 +1,10 @@
+<!-- res/drawable/ripple_add_circle.xml -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#33FF4081"> <!-- 主题色 + 透明度 -->
+
+    <item android:id="@android:id/mask">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+</ripple>

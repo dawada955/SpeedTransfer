@@ -1,0 +1,19 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="horizontal"
+    android:padding="8dp">
+    <TextView
+        android:id="@+id/text_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_head_server"
+        android:textColor="@android:color/black"
+        android:minWidth="38dp"
+        android:minHeight="38dp"
+        android:maxWidth="260dp"
+        android:maxHeight="260dp"
+        android:textSize="15sp"
+        android:padding="8dp" />
+</LinearLayout>
