@@ -8,6 +8,10 @@ public interface ChatCallback {
 
     void onDisplayNetwork(String ip, int PORT);
 
+    void onWsUploadStart(String filename, String ip);
+
+    void onWsUploadProgress(String filename, int progress, String speed, long bytes, int remaining);
+
     void onReceiveFileMessage(ChatMessage fileMessage, File file);
 
     void onReceiveFileMessageError(ChatMessage fileMessage);

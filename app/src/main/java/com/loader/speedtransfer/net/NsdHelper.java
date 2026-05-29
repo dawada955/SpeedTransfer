@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 
 public class NsdHelper {
     private static final String TAG = "NsdHelper";
-    private static final String SERVICE_TYPE = "_pcservicewt._tcp.";  // 与PC服务名保持一致
+    private static final String SERVICE_TYPE = "_pcservicewt._tcp.";
 
     private NsdManager nsdManager;
     private NsdManager.DiscoveryListener discoveryListener;
@@ -29,15 +29,12 @@ public class NsdHelper {
     public void initializeDiscoveryListener() {
         discoveryListener = new NsdManager.DiscoveryListener() {
             @Override
-            public void onDiscoveryStarted(String regType) {
-                Log.d(TAG, "Service discovery started");
-            }
+            public void onDiscoveryStarted(String regType) { Log.d(TAG, "Service discovery started"); }
 
             @Override
             public void onServiceFound(NsdServiceInfo service) {
                 Log.d(TAG, "Service discovery success: " + service);
                 if (service.getServiceType().equals(SERVICE_TYPE)) {
-                    Log.d(TAG, "Found desired service -> Resolving...");
                     nsdManager.resolveService(service, resolveListener);
                 }
             }
@@ -75,11 +72,10 @@ public class NsdHelper {
             public void onServiceResolved(NsdServiceInfo serviceInfo) {
                 String hostAddress = serviceInfo.getHost().getHostAddress();
                 int port = serviceInfo.getPort();
-                String serviceName = serviceInfo.getServiceName();
                 String heartBeatSign = new String(serviceInfo.getAttributes().get("heart_beat_sign"), StandardCharsets.UTF_8);
-                Log.d(TAG, "Service resolved: " + serviceName + " -> " + hostAddress + ":" + port);
+                Log.d(TAG, "Service resolved: " + serviceInfo.getServiceName() + " -> " + hostAddress + ":" + port);
                 if (callback != null) {
-                    callback.onServiceFound(heartBeatSign, serviceName, hostAddress, port);
+                    callback.onServiceFound(heartBeatSign, serviceInfo.getServiceName(), hostAddress, port);
                 }
             }
         };

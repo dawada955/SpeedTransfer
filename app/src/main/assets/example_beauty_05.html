@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>客户端</title>
+  <title>微传</title>
   <style>
     /* ============ 主题变量 ============ */
     :root {
@@ -170,6 +170,29 @@
       font-weight: bold;
       font-size: 12px;
     }
+    .msg-del {
+      display: none;
+    }
+    .ctx-menu {
+      position: fixed; z-index: 999;
+      background: var(--chat-bubble-server);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 4px 0; min-width: 100px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      display: none;
+      color: var(--text-color);
+    }
+    .ctx-menu .item {
+      padding: 8px 16px; cursor: pointer;
+      font-size: 13px; white-space: nowrap;
+    }
+    .ctx-menu .item:hover {
+      background: var(--chat-bubble-user);
+    }
+    .ctx-menu .item.danger {
+      color: #e53935;
+    }
 
     .chat-footer {
       background: var(--chat-bg);
@@ -262,6 +285,9 @@
     </div>
     <div class="chat-body" id="chat-body"></div>
     <div class="file-list-view" id="file-list-view"></div>
+    <div class="ctx-menu" id="ctxMenu">
+      <div class="item danger" onclick="deleteContextMsg()">删除</div>
+    </div>
     <div class="chat-footer">
       <div class="footer-top">
         <button class="upload-btn" onclick="document.getElementById('fileInput').click()" title="选择文件">＋</button>
@@ -284,7 +310,20 @@
 
     function connectWS() {
       wsSocket = new WebSocket(wsUrl);
-      wsSocket.onmessage = function(e){ addMsg(e.data, 'server'); };
+      wsSocket.onmessage = function(e){
+        try {
+          var d = JSON.parse(e.data);
+          if (d.type === 'copy_progress') {
+            updateCopyProgress(d.filename, d.progress, d.speed, d.remaining);
+          } else if (d.type === 'copy_complete') {
+            updateCopyComplete(d.filename);
+          } else {
+            addMsg(e.data, 'server');
+          }
+        } catch (ex) {
+          addMsg(e.data, 'server');
+        }
+      };
       wsSocket.onclose = function(){ setTimeout(connectWS, 2000); };
     }
     connectWS();
@@ -315,10 +354,15 @@
       var bubble = document.createElement('div');
       bubble.className = 'bubble ' + type;
       bubble.textContent = text;
+      row.addEventListener('contextmenu', onMsgContext);
       if (type === 'user') { row.appendChild(bubble); row.appendChild(avatar); }
       else { row.appendChild(avatar); row.appendChild(bubble); }
       chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function addDeleteBtn(bubble, row) {
+      row.addEventListener('contextmenu', onMsgContext);
     }
 
     function fmtSize(bytes) {
@@ -344,6 +388,33 @@
       if (seconds < 60) return Math.round(seconds) + '秒';
       if (seconds < 3600) return Math.round(seconds / 60) + '分钟';
       return (seconds / 3600).toFixed(1) + '小时';
+    }
+
+    function updateCopyProgress(filename, progress, speed, remaining) {
+      var rows = document.querySelectorAll('.msg-row.user');
+      for (var i = rows.length - 1; i >= 0; i--) {
+        var status = rows[i].querySelector('.upload-status');
+        var name = rows[i].querySelector('.file-name');
+        if (name && name.textContent === filename) {
+          var timeStr = remaining > 0 ? ' · 剩余' + fmtTime(remaining) : '';
+          status.textContent = '复制中 ' + progress + '% · ' + speed + timeStr;
+          status.classList.add('highlight');
+          return;
+        }
+      }
+    }
+
+    function updateCopyComplete(filename) {
+      var rows = document.querySelectorAll('.msg-row.user');
+      for (var i = rows.length - 1; i >= 0; i--) {
+        var status = rows[i].querySelector('.upload-status');
+        var name = rows[i].querySelector('.file-name');
+        if (name && name.textContent === filename) {
+          status.textContent = '复制完成' + ' · ' + status.textContent.split('·').pop();
+          status.classList.remove('highlight');
+          return;
+        }
+      }
     }
 
     function sendMessage() {
@@ -397,6 +468,9 @@
       var avatar = document.createElement('div');
       avatar.className = 'avatar user'; avatar.textContent = '我';
       row.appendChild(bubble); row.appendChild(avatar);
+
+      row.addEventListener('contextmenu', onMsgContext);
+
       chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
 
@@ -420,6 +494,17 @@
           var remaining = bps > 0 ? ((e.total - e.loaded) / bps) : 0;
           var timeStr = fmtTime(remaining);
           statusTxt.innerText = '上传中 ' + pct + '% · ' + fmtSpeed(bps) + (timeStr ? ' · 剩余' + timeStr : '');
+          // WS 实时同步上传进度给服务端
+          if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+            wsSocket.send(JSON.stringify({
+              type: 'upload_progress',
+              filename: file.name,
+              progress: pct,
+              speed: fmtSpeed(bps),
+              bytes: e.loaded,
+              remaining: Math.round(remaining)
+            }));
+          }
         }
       };
 
@@ -438,6 +523,9 @@
         statusTxt.classList.remove('highlight');
         statusTxt.innerText = '上传失败 · ' + fmtSize(file.size);
         statusTxt.style.color = '#e53935';
+        if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+          wsSocket.send(JSON.stringify({type:'upload_error',filename:file.name}));
+        }
       };
 
       xhr.ontimeout = function() {
@@ -445,6 +533,9 @@
         statusTxt.classList.remove('highlight');
         statusTxt.innerText = '上传超时 · ' + fmtSize(file.size);
         statusTxt.style.color = '#e53935';
+        if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+          wsSocket.send(JSON.stringify({type:'upload_error',filename:file.name}));
+        }
       };
 
       xhr.onabort = function() {
@@ -454,6 +545,10 @@
       };
 
       xhr.open('POST', '/upload', true);
+
+      if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+        wsSocket.send(JSON.stringify({type:'upload_start',filename:file.name}));
+      }
       xhr.send(fd);
     }
 
@@ -464,6 +559,36 @@
         '<span class="remove" onclick="removeSel()">✕</span></div>';
     });
     function removeSel() { fileInput.value=''; selFileDisp.innerHTML=''; }
+
+    var ctxTarget = null;
+    var ctxMenu = document.getElementById('ctxMenu');
+
+    function onMsgContext(e) {
+      e.preventDefault();
+      ctxTarget = e.currentTarget;
+      ctxMenu.style.display = 'block';
+      var x = e.clientX, y = e.clientY;
+      var mw = ctxMenu.offsetWidth || 100;
+      var mh = ctxMenu.offsetHeight || 36;
+      if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
+      if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
+      ctxMenu.style.left = x + 'px';
+      ctxMenu.style.top = y + 'px';
+    }
+
+    function deleteContextMsg() {
+      if (ctxTarget) { ctxTarget.remove(); ctxTarget = null; }
+      ctxMenu.style.display = 'none';
+    }
+
+    document.addEventListener('click', function() {
+      ctxMenu.style.display = 'none'; ctxTarget = null;
+    });
+
+    document.addEventListener('contextmenu', function(e) {
+      if (e.target.closest('.msg-row')) return;
+      ctxMenu.style.display = 'none'; ctxTarget = null;
+    });
 
     document.querySelector('.chat-container').addEventListener('dragover', function(e){ e.preventDefault(); });
     document.querySelector('.chat-container').addEventListener('drop', function(e){

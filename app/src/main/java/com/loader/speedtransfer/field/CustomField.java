@@ -8,9 +8,6 @@ public class CustomField {
 
     public final static int SERVICE_PORT = 8099;
 
-    public final static File DownloadDir = new File(Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_DOWNLOADS), "WeTransfer/上传文件");
-
-    public final static File UploadDir = new File(Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_DOWNLOADS), "WeTransfer/接收文件");
+    public final static File ShareDir = new File(Environment.getExternalStoragePublicDirectory(
+            Environment.DIRECTORY_DOWNLOADS), "WeTransfer");
 }

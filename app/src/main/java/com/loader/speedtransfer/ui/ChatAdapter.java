@@ -182,16 +182,41 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     return true;
                 });
 
+                // 长按文件气泡删除
+                fileHolder.itemView.setOnLongClickListener(v -> {
+                    int pos = holder.getAdapterPosition();
+                    if (pos != RecyclerView.NO_POSITION) {
+                        messageList.remove(pos);
+                        notifyItemRemoved(pos);
+                        CustomToast.showNoIcon(context, "已删除");
+                    }
+                    return true;
+                });
+
                 switch (message.getUploadStatus()) {
                     case UPLOADING:
                         fileHolder.progressBar.setVisibility(View.VISIBLE);
+                        fileHolder.textProgressPct.setVisibility(View.VISIBLE);
                         fileHolder.iconFailed.setVisibility(View.GONE);
                         fileHolder.fileLayoutEnd.setVisibility(View.VISIBLE);
                         fileHolder.fileSize.setText(message.getFileRealTimeSize());
                         fileHolder.progressBar.setProgress(message.getProgress());
+                        fileHolder.textProgressPct.setText(message.getProgress() + "%");
+                        fileHolder.fileStatus.setText(" 上传中 · ");
+                        break;
+                    case COPYING:
+                        fileHolder.progressBar.setVisibility(View.VISIBLE);
+                        fileHolder.textProgressPct.setVisibility(View.VISIBLE);
+                        fileHolder.iconFailed.setVisibility(View.GONE);
+                        fileHolder.fileLayoutEnd.setVisibility(View.VISIBLE);
+                        fileHolder.fileSize.setText(message.getFileRealTimeSize());
+                        fileHolder.progressBar.setProgress(message.getProgress());
+                        fileHolder.textProgressPct.setText(message.getProgress() + "%");
+                        fileHolder.fileStatus.setText(" 复制中 · ");
                         break;
                     case FAILED:
                         fileHolder.progressBar.setVisibility(View.GONE);
+                        fileHolder.textProgressPct.setVisibility(View.GONE);
                         fileHolder.iconFailed.setVisibility(View.VISIBLE);
                         fileHolder.fileLayoutEnd.setVisibility(View.VISIBLE);
                         fileHolder.fileStatus.setText("上传失败 · ");
@@ -199,6 +224,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     case COMPLETED:
                         fileHolder.progressBar.setProgress(100);
                         fileHolder.progressBar.setVisibility(View.GONE);
+                        fileHolder.textProgressPct.setVisibility(View.GONE);
                         fileHolder.iconFailed.setVisibility(View.GONE);
                         fileHolder.fileLayoutEnd.setVisibility(View.GONE);
                         fileHolder.fileStatus.setText("上传完成 · ");
@@ -244,6 +270,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView fileSize;
         TextView fileStatus;
         ProgressBar progressBar;
+        TextView textProgressPct;
         ImageView iconFailed;
         FrameLayout fileLayoutEnd;
         TextView senderName;
@@ -254,6 +281,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             fileName = itemView.findViewById(R.id.text_file_name);
             fileSize = itemView.findViewById(R.id.text_file_size);
             progressBar = itemView.findViewById(R.id.progress_upload);
+            textProgressPct = itemView.findViewById(R.id.text_progress_pct);
             iconFailed = itemView.findViewById(R.id.icon_failed);
             fileStatus = itemView.findViewById(R.id.text_file_status);
             fileLayoutEnd = itemView.findViewById(R.id.file_layout_end);

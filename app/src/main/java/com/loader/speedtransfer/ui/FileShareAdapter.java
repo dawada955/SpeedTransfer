@@ -46,6 +46,7 @@ public class FileShareAdapter extends RecyclerView.Adapter<FileShareAdapter.View
         if (position >= 0 && position < fileList.size()) {
             fileList.remove(position);
             notifyItemRemoved(position);
+            notifyItemRangeChanged(position, fileList.size());
         }
     }
 

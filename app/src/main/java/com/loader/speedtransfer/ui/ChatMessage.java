@@ -6,6 +6,7 @@ public class ChatMessage {
     private String content;
     private boolean isSender;
     private String senderName;
+    private String filename;
 
     public ChatMessage() {}
 
@@ -61,12 +62,20 @@ public class ChatMessage {
         this.senderName = senderName;
     }
 
+    public String getFilename() {
+        return filename;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
     private File file;
     private String fileRealTimeSize;
     private int progress;
 
     public enum UploadStatus {
-        UPLOADING, COMPLETED, FAILED
+        UPLOADING, COPYING, COMPLETED, FAILED
     }
 
     private UploadStatus uploadStatus = UploadStatus.UPLOADING;

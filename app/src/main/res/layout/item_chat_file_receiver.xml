@@ -123,6 +123,16 @@
                 android:progressDrawable="@drawable/progress_ring"
                 android:visibility="gone" />
 
+            <TextView
+                android:id="@+id/text_progress_pct"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="0%"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:visibility="gone" />
+
             <ImageView
                 android:id="@+id/icon_failed"
                 android:layout_width="match_parent"

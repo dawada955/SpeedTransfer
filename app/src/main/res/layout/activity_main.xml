@@ -39,6 +39,7 @@
             android:text="xxx.xxx.xxx.xxx:xxxx"
             android:textColor="#FFE0E0E0"
             android:textSize="12sp"
+            android:maxLines="2"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
             android:background="?attr/selectableItemBackground"

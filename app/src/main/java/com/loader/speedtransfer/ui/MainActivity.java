@@ -25,6 +25,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
@@ -227,15 +228,25 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
             }
         });
 
-        // --- IP 点击复制 ---
+        // --- IP 点击复制，双击打开浏览器 ---
         tv_NetworkAddressPort.setOnClickListener(v -> {
             String text = tv_NetworkAddressPort.getText().toString();
             if (text != null && !text.isEmpty() && !text.startsWith("xxx")) {
                 ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                 cm.setPrimaryClip(ClipData.newPlainText("ip", text));
-                CustomToast.showNoIcon(this, "IP 已复制");
+                CustomToast.showNoIcon(MainActivity.this, "IP 已复制");
             }
         });
+
+        tv_NetworkAddressPort.setOnTouchListener(new DoubleClickListener(
+                () -> {
+                    String text = tv_NetworkAddressPort.getText().toString();
+                    if (text != null && !text.isEmpty() && !text.startsWith("xxx")) {
+                        String url = "http://" + text + "/";
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(intent);
+                    }
+                }));
 
         // --- 共享文件列表 ---
         fileListWrapper = findViewById(R.id.file_list_wrapper);
@@ -247,15 +258,25 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
         recyclerViewFiles.setAdapter(fileShareAdapter);
 
         fileShareAdapter.setOnDeleteClickListener((file, position) -> {
-            if (file.delete()) {
+            boolean deleted = file.delete();
+            if (!deleted) {
+                deleted = file.delete();
+            }
+            if (deleted || !file.exists()) {
                 fileShareAdapter.removeItem(position);
                 int remaining = fileShareAdapter.getItemCount();
-                updateToggleBarText(remaining);
                 if (remaining == 0) {
-                    fileListExpanded = true;
-                    animateFileList(false);
+                    fileListExpanded = false;
+                    updateToggleBarText(0);
+                    fileListAnimating = false;
+                    fileListWrapper.setVisibility(View.GONE);
+                } else {
+                    updateToggleBarText(remaining);
+                    recalcWrapperHeight();
                 }
                 CustomToast.showNoIcon(this, "已删除");
+            } else {
+                CustomToast.showNoIcon(this, "删除失败，文件可能被占用");
             }
         });
 
@@ -270,7 +291,7 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
         launcher = FilePickerUtil.registerFilePicker(this, (uris, names) -> {
             for (int i = 0; i < uris.size(); i++) {
                 Log.d("选中的文件", names.get(i) + ": " + uris.get(i));
-                FileUtils.copyUriToDirectory(this, uris.get(i), CustomField.DownloadDir);
+                FileUtils.copyUriToDirectory(this, uris.get(i), CustomField.ShareDir);
             }
             refreshFileList();
             CustomToast.showNoIcon(this, "文件添加成功");
@@ -343,34 +364,45 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
 
     // --- 共享文件列表管理 ---
     private void refreshFileList() {
-        File downloadDir = CustomField.DownloadDir;
-        if (!downloadDir.exists()) {
-            downloadDir.mkdirs();
+        File shareDir = CustomField.ShareDir;
+        if (!shareDir.exists()) {
+            shareDir.mkdirs();
         }
 
-        File[] files = downloadDir.listFiles(File::isFile);
+        File[] files = shareDir.listFiles(File::isFile);
         List<File> fileList = new ArrayList<>();
         if (files != null) {
             Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
             fileList.addAll(Arrays.asList(files));
         }
 
+        int prevCount = fileShareAdapter.getItemCount();
         fileShareAdapter.setFiles(fileList);
         int count = fileList.size();
-        updateToggleBarText(count);
 
         if (count == 0) {
-            fileListExpanded = true;
+            fileListExpanded = false;
             fileListWrapper.setVisibility(View.GONE);
-        } else {
+        } else if (prevCount == 0 && fileListWrapper.getVisibility() != View.VISIBLE) {
+            // 首次启动有文件，默认展开
             fileListExpanded = true;
             showFileListImmediate();
+        } else if (fileListWrapper.getVisibility() == View.VISIBLE) {
+            recalcWrapperHeight();
         }
+        updateToggleBarText(count);
     }
 
     private void updateToggleBarText(int count) {
         String arrow = fileListExpanded ? "▼" : "▶";
         tvFileToggleBar.setText(arrow + " 共享文件 (" + count + ")");
+    }
+
+    private void recalcWrapperHeight() {
+        int h = measureWrapperHeight();
+        ViewGroup.LayoutParams lp = fileListWrapper.getLayoutParams();
+        lp.height = h;
+        fileListWrapper.setLayoutParams(lp);
     }
 
     private void toggleFileList() {
@@ -485,28 +517,78 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
     }
 
     @Override
+    public void onWsUploadStart(String filename, String ip) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            ChatMessage msg = new ChatMessage();
+            msg.setType(ChatMessage.MessageType.FILE);
+            msg.setSender(false);
+            msg.setSenderName(ip);
+            msg.setFilename(filename);
+            msg.setFile(new File(CustomField.ShareDir, filename));
+            msg.setUploadStatus(ChatMessage.UploadStatus.UPLOADING);
+            msg.setProgress(0);
+            msg.setFileRealTimeSize("0 B");
+            messageList.add(msg);
+            adapter.notifyItemInserted(messageList.size() - 1);
+            recyclerView.scrollToPosition(messageList.size() - 1);
+        });
+    }
+
+    @Override
+    public void onWsUploadProgress(String filename, int progress, String speed, long bytes, int remaining) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            for (int i = messageList.size() - 1; i >= 0; i--) {
+                ChatMessage msg = messageList.get(i);
+                if (filename.equals(msg.getFilename())
+                        && (msg.getUploadStatus() == ChatMessage.UploadStatus.UPLOADING
+                         || msg.getUploadStatus() == ChatMessage.UploadStatus.COPYING)) {
+                    msg.setProgress(progress);
+                    msg.setFileRealTimeSize(FileUtils.getReadableFileSize(bytes) + " · " + speed);
+                    adapter.notifyItemChanged(i);
+                    break;
+                }
+            }
+        });
+    }
+
+    @Override
     public void onReceiveFileMessage(ChatMessage fileMessage, File file) {
         fileMessage.setType(ChatMessage.MessageType.FILE);
         fileMessage.setSender(false);
         fileMessage.setFile(file);
-        fileMessage.setUploadStatus(ChatMessage.UploadStatus.UPLOADING);
 
-        runOnUiThread(() -> {
-            fileMessage.setProgress(100);
+        new Handler(Looper.getMainLooper()).post(() -> {
+            // 如果 WS 已创建气泡，复用而非新增
+            String fn = fileMessage.getFilename();
+            if (fn != null) {
+                for (int i = messageList.size() - 1; i >= 0; i--) {
+                    if (fn.equals(messageList.get(i).getFilename())) {
+                        ChatMessage existing = messageList.get(i);
+                        existing.setFile(fileMessage.getFile());
+                        existing.setSenderName(fileMessage.getSenderName());
+                        existing.setUploadStatus(fileMessage.getUploadStatus());
+                        adapter.notifyItemChanged(i);
+                        return;
+                    }
+                }
+            }
             messageList.add(fileMessage);
-            int position = messageList.size() - 1;
-            adapter.notifyItemInserted(position);
+            adapter.notifyItemInserted(messageList.size() - 1);
         });
     }
 
     @Override
     public void onReceiveFileMessageProgress(ChatMessage fileMessage, int progress, long size) {
         new Handler(Looper.getMainLooper()).post(() -> {
-            int pos = messageList.indexOf(fileMessage);
-            if (pos != -1) {
-                fileMessage.setProgress(progress);
-                fileMessage.setFileRealTimeSize(FileUtils.getReadableFileSize(size));
-                adapter.notifyItemChanged(pos);
+            String fn = fileMessage.getFilename();
+            for (int i = messageList.size() - 1; i >= 0; i--) {
+                ChatMessage msg = messageList.get(i);
+                if (fn != null && fn.equals(msg.getFilename())) {
+                    msg.setProgress(progress);
+                    msg.setFileRealTimeSize(FileUtils.getReadableFileSize(size));
+                    adapter.notifyItemChanged(i);
+                    return;
+                }
             }
         });
     }
@@ -515,10 +597,17 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
     public void onReceiveFileMessageComplete(ChatMessage fileMessage, long size) {
         new Handler(Looper.getMainLooper()).post(() -> {
             fileMessage.setUploadStatus(ChatMessage.UploadStatus.COMPLETED);
-            int pos = messageList.indexOf(fileMessage);
-            if (pos != -1) {
-                fileMessage.setFileRealTimeSize(FileUtils.getReadableFileSize(size));
-                adapter.notifyItemChanged(pos);
+            String fn = fileMessage.getFilename();
+            for (int i = messageList.size() - 1; i >= 0; i--) {
+                ChatMessage msg = messageList.get(i);
+                if (fn != null && fn.equals(msg.getFilename())) {
+                    msg.setFile(fileMessage.getFile());
+                    msg.setUploadStatus(ChatMessage.UploadStatus.COMPLETED);
+                    msg.setFileRealTimeSize(FileUtils.getReadableFileSize(size));
+                    adapter.notifyItemChanged(i);
+                    refreshFileList();
+                    return;
+                }
             }
         });
     }
@@ -527,10 +616,39 @@ public class MainActivity extends AppCompatActivity implements ChatCallback {
     public void onReceiveFileMessageError(ChatMessage fileMessage) {
         new Handler(Looper.getMainLooper()).post(() -> {
             fileMessage.setUploadStatus(ChatMessage.UploadStatus.FAILED);
-            int pos = messageList.indexOf(fileMessage);
-            if (pos != -1) {
-                adapter.notifyItemChanged(pos);
+            String fn = fileMessage.getFilename();
+            for (int i = messageList.size() - 1; i >= 0; i--) {
+                ChatMessage msg = messageList.get(i);
+                if (fn != null && fn.equals(msg.getFilename())) {
+                    msg.setUploadStatus(ChatMessage.UploadStatus.FAILED);
+                    adapter.notifyItemChanged(i);
+                    return;
+                }
             }
         });
+    }
+
+    private static class DoubleClickListener implements View.OnTouchListener {
+        private final Runnable onDoubleClick;
+        private long lastClickTime = 0;
+        private static final long DOUBLE_CLICK_INTERVAL = 400;
+
+        DoubleClickListener(Runnable onDoubleClick) {
+            this.onDoubleClick = onDoubleClick;
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                long now = System.currentTimeMillis();
+                if (now - lastClickTime < DOUBLE_CLICK_INTERVAL) {
+                    onDoubleClick.run();
+                    lastClickTime = 0;
+                    return true;
+                }
+                lastClickTime = now;
+            }
+            return false;
+        }
     }
 }

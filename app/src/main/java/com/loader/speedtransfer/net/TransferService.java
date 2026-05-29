@@ -26,6 +26,8 @@ import com.loader.speedtransfer.utils.DeviceSettingUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransferService extends Service implements ChatCallback {
     private static final String TAG = "TransferService";
@@ -38,6 +40,7 @@ public class TransferService extends Service implements ChatCallback {
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
     private ChatCallback activityCallback;
+    private final List<Runnable> pendingMessages = new ArrayList<>();
 
     @Override
     public void onCreate() {
@@ -85,6 +88,11 @@ public class TransferService extends Service implements ChatCallback {
             String ip = getLocalIpAddress();
             callback.onDisplayNetwork(ip, CustomField.SERVICE_PORT);
         }
+        // 刷新缓冲的 WS 消息
+        for (Runnable r : pendingMessages) {
+            r.run();
+        }
+        pendingMessages.clear();
     }
 
     public void clearActivityCallback() {
@@ -135,7 +143,6 @@ public class TransferService extends Service implements ChatCallback {
         }
     }
 
-    // --- WakeLock / WifiLock ---
     private void acquireLocks() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SpeedTransfer::WakeLock");
@@ -159,7 +166,6 @@ public class TransferService extends Service implements ChatCallback {
         }
     }
 
-    // --- Notification ---
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -203,7 +209,23 @@ public class TransferService extends Service implements ChatCallback {
         }
     }
 
-    // --- ChatCallback 实现，转发给 Activity ---
+    @Override
+    public void onWsUploadStart(String filename, String ip) {
+        if (activityCallback != null) {
+            activityCallback.onWsUploadStart(filename, ip);
+        } else {
+            pendingMessages.add(() -> activityCallback.onWsUploadStart(filename, ip));
+        }
+    }
+
+    @Override
+    public void onWsUploadProgress(String filename, int progress, String speed, long bytes, int remaining) {
+        if (activityCallback != null) {
+            activityCallback.onWsUploadProgress(filename, progress, speed, bytes, remaining);
+        }
+        // 进度消息不缓冲，活动恢复后通过后续消息更新
+    }
+
     @Override
     public void onReceiveMessage(String ip, String content) {
         if (activityCallback != null) {
